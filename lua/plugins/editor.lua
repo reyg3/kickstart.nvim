@@ -31,15 +31,13 @@ return {
         },
       },
     },
+    -- NOTE: Telescope owns the <leader>s* search namespace and <leader><space>
+    -- (see plugins/telescope.lua). Its keymaps are set in `config` at VimEnter,
+    -- which overwrites lazy's `keys` stubs, so any Snacks entry duplicating a
+    -- Telescope lhs is dead. Snacks owns <leader>f* find, <leader>g* git,
+    -- <leader>u* toggles, and <leader>e explorer. Keep the two sets disjoint.
     keys = {
       -- Top Pickers & Explorer
-      {
-        '<leader><space>',
-        function()
-          Snacks.picker.smart()
-        end,
-        desc = 'Smart Find Files',
-      },
       {
         '<leader>,',
         function()
@@ -48,25 +46,11 @@ return {
         desc = 'Buffers',
       },
       {
-        '<leader>/',
-        function()
-          Snacks.picker.grep()
-        end,
-        desc = 'Grep',
-      },
-      {
         '<leader>:',
         function()
           Snacks.picker.command_history()
         end,
         desc = 'Command History',
-      },
-      {
-        '<leader>n',
-        function()
-          Snacks.picker.notifications()
-        end,
-        desc = 'Notification History',
       },
       {
         '<leader>e',
@@ -170,33 +154,11 @@ return {
       },
       -- Grep
       {
-        '<leader>sb',
-        function()
-          Snacks.picker.lines()
-        end,
-        desc = 'Buffer Lines',
-      },
-      {
         '<leader>sB',
         function()
           Snacks.picker.grep_buffers()
         end,
         desc = 'Grep Open Buffers',
-      },
-      {
-        '<leader>sg',
-        function()
-          Snacks.picker.grep()
-        end,
-        desc = 'Grep',
-      },
-      {
-        '<leader>sw',
-        function()
-          Snacks.picker.grep_word()
-        end,
-        desc = 'Visual selection or word',
-        mode = { 'n', 'x' },
       },
       -- search
       {
@@ -205,13 +167,6 @@ return {
           Snacks.picker.registers()
         end,
         desc = 'Registers',
-      },
-      {
-        '<leader>s/',
-        function()
-          Snacks.picker.search_history()
-        end,
-        desc = 'Search History',
       },
       {
         '<leader>sa',
@@ -242,25 +197,11 @@ return {
         desc = 'Commands',
       },
       {
-        '<leader>sd',
-        function()
-          Snacks.picker.diagnostics()
-        end,
-        desc = 'Diagnostics',
-      },
-      {
         '<leader>sD',
         function()
           Snacks.picker.diagnostics_buffer()
         end,
         desc = 'Buffer Diagnostics',
-      },
-      {
-        '<leader>sh',
-        function()
-          Snacks.picker.help()
-        end,
-        desc = 'Help Pages',
       },
       {
         '<leader>sH',
@@ -282,13 +223,6 @@ return {
           Snacks.picker.jumps()
         end,
         desc = 'Jumps',
-      },
-      {
-        '<leader>sk',
-        function()
-          Snacks.picker.keymaps()
-        end,
-        desc = 'Keymaps',
       },
       {
         '<leader>sl',
@@ -361,14 +295,10 @@ return {
         end,
         desc = 'Goto Declaration',
       },
-      {
-        'gr',
-        function()
-          Snacks.picker.lsp_references()
-        end,
-        nowait = true,
-        desc = 'References',
-      },
+      -- NOTE: no bare `gr` map here. Neovim 0.11+ ships grn/gra/gri/grr/grt/grx
+      -- as built-in LSP defaults, so binding `gr` makes every one of them wait
+      -- out `timeoutlen`. Use `grr` for references -- plugins/lsp.lua upgrades it
+      -- to the Telescope picker on LspAttach.
       {
         'gI',
         function()
@@ -598,6 +528,12 @@ return {
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>p', group = 'GitHub [P]R' },
+        { '<leader>f', group = '[F]ind' },
+        { '<leader>g', group = '[G]it' },
+        { '<leader>u', group = 'Toggle [U]I' },
+        { '<leader>c', group = '[C]ode' },
+        { '<leader>d', group = '[D]ojo' },
       },
     },
   },

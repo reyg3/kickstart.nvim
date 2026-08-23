@@ -6,12 +6,15 @@ return {
     cmd = { 'ConformInfo' },
     keys = {
       {
-        '<leader>f',
+        -- NOTE: not <leader>f -- that is the Snacks find prefix (<leader>ff,
+        -- <leader>fg, ...), and a bare <leader>f would make all of them
+        -- wait out `timeoutlen`.
+        '<leader>cf',
         function()
           require('conform').format { async = true, lsp_format = 'fallback' }
         end,
         mode = '',
-        desc = '[F]ormat buffer',
+        desc = '[C]ode [F]ormat buffer',
       },
     },
     opts = {
