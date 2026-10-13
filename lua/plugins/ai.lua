@@ -1,4 +1,10 @@
 -- AI and code assistance tools
+
+-- Local Ollama (Ollama.app on the Studio) shared by avante and ollama.nvim.
+-- Must be a model listed by `ollama list`.
+local ollama_url = 'http://127.0.0.1:11434'
+local ollama_model = 'qwen3-coder-next:q4_K_M'
+
 return {
   -- GitHub Copilot
   {
@@ -59,19 +65,54 @@ return {
     build = vim.fn.has 'win32' ~= 0 and 'powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false' or 'make',
     event = 'VeryLazy',
     version = false, -- Never set this value to "*"! Never!
+    keys = {
+      -- Explain the current line (normal) or selection (visual) in the avante sidebar.
+      -- avante reads the selection from the live visual mode, so this must stay a function.
+      {
+        '<leader>ae',
+        function()
+          if vim.fn.mode() == 'n' then
+            vim.cmd 'normal! V'
+          end
+          require('avante.api').ask { question = 'Explain what this code does, line by line.', new_chat = true }
+        end,
+        desc = 'avante: explain code',
+        mode = { 'n', 'v' },
+      },
+    },
     ---@module 'avante'
     ---@type avante.Config
     opts = {
       -- add any opts here
       -- this file can contain specific instructions for your project
       instructions_file = 'avante.md',
+      -- <leader>ae is the explain keymap above; move avante's edit off it
+      mappings = {
+        edit = '<leader>aE',
+      },
       -- for example
-      provider = 'ollama',
+      -- Local Ollama through its OpenAI-compatible /v1 API. avante's native
+      -- 'ollama' provider parses tool calls out of text (ReAct) and then never
+      -- runs them, so file edits hang on "Tool calling". The openai provider
+      -- uses real tool calls instead.
+      provider = 'ollama_openai',
 
       providers = {
+        ollama_openai = {
+          __inherited_from = 'openai',
+          endpoint = ollama_url .. '/v1',
+          model = ollama_model,
+          api_key_name = '', -- local Ollama needs no key
+          timeout = 120000, -- large local models can take a while to load
+          use_ReAct_prompt = false,
+        },
+        -- Native provider, kept for :AvanteSwitchProvider ollama (chat only)
         ollama = {
-          endpoint = 'http://localhost:11434',
-          model = 'deepseek-coder-v2:latest',
+          endpoint = ollama_url,
+          model = ollama_model,
+          timeout = 120000, -- large local models can take a while to load
+          -- avante treats ollama as disabled unless this is overridden
+          is_env_set = function() return require('avante.providers.ollama').check_endpoint_alive() end,
         },
       },
       -- provider = 'claude',
@@ -100,14 +141,9 @@ return {
       'nvim-lua/plenary.nvim',
       'MunifTanjim/nui.nvim',
       --- The below dependencies are optional,
-      'echasnovski/mini.pick', -- for file_selector provider mini.pick
       'nvim-telescope/telescope.nvim', -- for file_selector provider telescope
-      'hrsh7th/nvim-cmp', -- autocompletion for avante commands and mentions
-      'ibhagwan/fzf-lua', -- for file_selector provider fzf
-      'stevearc/dressing.nvim', -- for input provider dressing
       'folke/snacks.nvim', -- for input provider snacks
       'nvim-tree/nvim-web-devicons', -- or echasnovski/mini.icons
-      'zbirenbaum/copilot.lua', -- for providers='copilot'
       {
         -- support for image pasting
         'HakonHarnes/img-clip.nvim',
@@ -155,12 +191,32 @@ return {
         mode = { 'n', 'v' },
       },
 
+      -- Explain the visual selection
+      {
+        '<leader>oe',
+        ":<c-u>lua require('ollama').prompt('Explain_Code')<cr>",
+        desc = 'ollama Explain Code',
+        mode = 'v',
+      },
+
       -- Sample keybind for direct prompting. Note that the <c-u> is important for selections to work properly.
       {
         '<leader>oG',
         ":<c-u>lua require('ollama').prompt('Generate_Code')<cr>",
         desc = 'ollama Generate Code',
         mode = { 'n', 'v' },
+      },
+
+      -- AI-written reST docstring for the Python function/class under the cursor.
+      -- The model only returns text; custom.docstring inserts it, so code is never edited.
+      -- <leader>cd (plugins/editor.lua) is the neogen skeleton.
+      {
+        '<leader>cD',
+        function()
+          require('custom.docstring').generate { url = ollama_url, model = ollama_model }
+        end,
+        desc = '[C]ode [D]ocstring (AI)',
+        ft = 'python',
       },
 
       -- select ollama model
@@ -175,14 +231,12 @@ return {
     ---@type Ollama.Config
     opts = {
       -- your configuration overrides
-      model = 'deepseek-coder-v2:latest',
-      url = 'http://127.0.0.1:11434',
+      model = ollama_model,
+      url = ollama_url,
+      -- Ollama.app already runs the server; starting another one here would
+      -- shadow it, and the pkill stop command would also kill the app's server.
       serve = {
-        on_start = true,
-        command = 'ollama',
-        args = { 'serve' },
-        stop_command = 'pkill',
-        stop_args = { '-SIGTERM', 'ollama' },
+        on_start = false,
       },
     },
   },

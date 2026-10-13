@@ -414,6 +414,14 @@ return {
         desc = 'which_key_ignore',
       },
       {
+        '<leader>A',
+        function()
+          -- Fixed cwd so the same aura session is reused from any buffer
+          Snacks.terminal.toggle('aura chat', { cwd = vim.env.HOME, win = { position = 'float' } })
+        end,
+        desc = 'Toggle aura chat',
+      },
+      {
         ']]',
         function()
           Snacks.words.jump(vim.v.count1)
@@ -575,5 +583,33 @@ return {
       -- ... and there is more!
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
+  },
+
+  -- Neogen - docstring skeletons from the function/class signature under the cursor.
+  -- Python uses reST (Sphinx) fields: :param:, :type:, :raises:, :return:, :rtype:.
+  -- <Tab>/<S-Tab> jump between the placeholders (blink.cmp + LuaSnip).
+  -- See <leader>cD in plugins/ai.lua for an AI-written docstring (custom/docstring.lua).
+  {
+    'danymat/neogen',
+    version = '*',
+    dependencies = { 'nvim-treesitter/nvim-treesitter', 'L3MON4D3/LuaSnip' },
+    cmd = 'Neogen',
+    keys = {
+      {
+        '<leader>cd',
+        function()
+          require('neogen').generate()
+        end,
+        desc = '[C]ode [D]ocstring',
+      },
+    },
+    opts = {
+      snippet_engine = 'luasnip',
+      languages = {
+        python = {
+          template = { annotation_convention = 'reST' },
+        },
+      },
+    },
   },
 }
