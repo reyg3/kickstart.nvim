@@ -35,6 +35,7 @@ local function clean(text)
       min_indent = math.min(min_indent or n, n)
     end
   end
+  lines[1] = lines[1]:gsub('%s+$', '')
   for i = 2, #lines do
     lines[i] = lines[i]:sub((min_indent or 0) + 1):gsub('%s+$', '')
   end
