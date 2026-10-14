@@ -13,6 +13,9 @@ local SYSTEM_PROMPT = table.concat({
   'params, raises, returns: describe exactly the items listed in the request, each in one short phrase.',
   'type: a concise Python type such as str, int, list[str], dict, or "int or None".',
   'For a class, describe the class; its params are the __init__ parameters.',
+  'The request may include project context: imports, called functions with their docstrings,',
+  'and call sites. Use it to get types and meaning right, but only document the given code.',
+  'Do not invent behavior that the code and context do not show.',
 }, ' ')
 
 -- Ollama structured output: the reply must match this JSON schema
@@ -266,6 +269,8 @@ local function definition_at_cursor()
   return node
 end
 
+local send -- defined below generate, which hands off to it
+
 ---@param opts { url: string, model: string }
 function M.generate(opts)
   local buf = vim.api.nvim_get_current_buf()
@@ -319,17 +324,29 @@ function M.generate(opts)
     end, list)
     return #out > 0 and table.concat(out, ', ') or 'none'
   end
-  local request = table.concat({
-    '```python',
-    source_for(node, buf),
-    '```',
-    '',
-    'params to describe: ' .. names(facts.params, 'name'),
-    'raises to describe: ' .. names(facts.raises),
-    'returns: ' .. (facts.returns and 'describe the return value' or 'none, leave description and type empty'),
-  }, '\n')
+  local source = source_for(node, buf)
 
   vim.notify('Writing docstring for ' .. name .. '…')
+  require('custom.docstring_context').gather(buf, node, function(context)
+    local request = table.concat({
+      'Code to document:',
+      '```python',
+      source,
+      '```',
+      '',
+      'params to describe: ' .. names(facts.params, 'name'),
+      'raises to describe: ' .. names(facts.raises),
+      'returns: ' .. (facts.returns and 'describe the return value' or 'none, leave description and type empty'),
+    }, '\n')
+    if context ~= '' then
+      request = request .. '\n\nProject context (for understanding only, do not document it):\n```python\n' .. context .. '\n```'
+    end
+    send(opts, buf, ns, mark, facts, name, body_col, request)
+  end)
+end
+
+--- Ask the model for the descriptions and insert the assembled docstring.
+function send(opts, buf, ns, mark, facts, name, body_col, request)
   local payload = vim.json.encode {
     model = opts.model,
     stream = false,
